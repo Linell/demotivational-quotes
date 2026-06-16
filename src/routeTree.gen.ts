@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as QIdRouteImport } from './routes/q.$id'
+import { Route as ApiVotesTokenRouteImport } from './routes/api/votes-token'
+import { Route as ApiVoteRouteImport } from './routes/api/vote'
+import { Route as ApiQuotesRouteImport } from './routes/api/quotes'
+import { Route as ApiQuoteRouteImport } from './routes/api/quote'
+import { Route as ApiInngestRouteImport } from './routes/api/inngest'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QIdRoute = QIdRouteImport.update({
+  id: '/q/$id',
+  path: '/q/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVotesTokenRoute = ApiVotesTokenRouteImport.update({
+  id: '/api/votes-token',
+  path: '/api/votes-token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVoteRoute = ApiVoteRouteImport.update({
+  id: '/api/vote',
+  path: '/api/vote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiQuotesRoute = ApiQuotesRouteImport.update({
+  id: '/api/quotes',
+  path: '/api/quotes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiQuoteRoute = ApiQuoteRouteImport.update({
+  id: '/api/quote',
+  path: '/api/quote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiInngestRoute = ApiInngestRouteImport.update({
+  id: '/api/inngest',
+  path: '/api/inngest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/inngest': typeof ApiInngestRoute
+  '/api/quote': typeof ApiQuoteRoute
+  '/api/quotes': typeof ApiQuotesRoute
+  '/api/vote': typeof ApiVoteRoute
+  '/api/votes-token': typeof ApiVotesTokenRoute
+  '/q/$id': typeof QIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/inngest': typeof ApiInngestRoute
+  '/api/quote': typeof ApiQuoteRoute
+  '/api/quotes': typeof ApiQuotesRoute
+  '/api/vote': typeof ApiVoteRoute
+  '/api/votes-token': typeof ApiVotesTokenRoute
+  '/q/$id': typeof QIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/inngest': typeof ApiInngestRoute
+  '/api/quote': typeof ApiQuoteRoute
+  '/api/quotes': typeof ApiQuotesRoute
+  '/api/vote': typeof ApiVoteRoute
+  '/api/votes-token': typeof ApiVotesTokenRoute
+  '/q/$id': typeof QIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/api/inngest'
+    | '/api/quote'
+    | '/api/quotes'
+    | '/api/vote'
+    | '/api/votes-token'
+    | '/q/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/api/inngest'
+    | '/api/quote'
+    | '/api/quotes'
+    | '/api/vote'
+    | '/api/votes-token'
+    | '/q/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/inngest'
+    | '/api/quote'
+    | '/api/quotes'
+    | '/api/vote'
+    | '/api/votes-token'
+    | '/q/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiInngestRoute: typeof ApiInngestRoute
+  ApiQuoteRoute: typeof ApiQuoteRoute
+  ApiQuotesRoute: typeof ApiQuotesRoute
+  ApiVoteRoute: typeof ApiVoteRoute
+  ApiVotesTokenRoute: typeof ApiVotesTokenRoute
+  QIdRoute: typeof QIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,12 +130,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/q/$id': {
+      id: '/q/$id'
+      path: '/q/$id'
+      fullPath: '/q/$id'
+      preLoaderRoute: typeof QIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/votes-token': {
+      id: '/api/votes-token'
+      path: '/api/votes-token'
+      fullPath: '/api/votes-token'
+      preLoaderRoute: typeof ApiVotesTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/vote': {
+      id: '/api/vote'
+      path: '/api/vote'
+      fullPath: '/api/vote'
+      preLoaderRoute: typeof ApiVoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/quotes': {
+      id: '/api/quotes'
+      path: '/api/quotes'
+      fullPath: '/api/quotes'
+      preLoaderRoute: typeof ApiQuotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/quote': {
+      id: '/api/quote'
+      path: '/api/quote'
+      fullPath: '/api/quote'
+      preLoaderRoute: typeof ApiQuoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/inngest': {
+      id: '/api/inngest'
+      path: '/api/inngest'
+      fullPath: '/api/inngest'
+      preLoaderRoute: typeof ApiInngestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiInngestRoute: ApiInngestRoute,
+  ApiQuoteRoute: ApiQuoteRoute,
+  ApiQuotesRoute: ApiQuotesRoute,
+  ApiVoteRoute: ApiVoteRoute,
+  ApiVotesTokenRoute: ApiVotesTokenRoute,
+  QIdRoute: QIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

@@ -1,217 +1,121 @@
-Welcome to your new TanStack Start app! 
+# demotivational-quotes
 
-# Getting Started
+A small public demo of [Inngest's](https://inngest.com) experiments and scoring features. It generates demotivational quotes, choosing between Claude and GPT via a durable A/B experiment, and scores each variant on quality, sentiment, and engagement. The payoff is in the [Inngest dashboard](https://app.inngest.com), where the variant split and the scores arrive in real time.
 
-To run this application:
+## The experiment
 
-```bash
-npm install
-npm run dev
+`generateQuote` (`src/inngest/quotes.ts`) wraps generation in an Inngest experiment:
+
+```ts
+group.experiment("quote-model", {
+  variants: { claude: ..., openai: ... },
+  select: experiment.weighted({ claude: 50, openai: 50 }),
+});
 ```
 
-# Building For Production
+Each request is durably routed to one variant — Claude (`claude-opus-4-8`) or GPT (`gpt-4o`) — by a weighted 50/50 split. Each variant runs as a tagged step (`quote-claude` / `quote-openai`), and that variant tag is what later lets the dashboard slice scores per model.
 
-To build this application for production:
+## The scores
+
+The whole point is comparing the two models, so every metric is scored _per variant_. Scores group by name, so each model gets its own series — `quality-claude` vs `quality-openai`, etc. The three metrics:
+
+| Score                 | Range   | Written by                           | When                                                              |
+| --------------------- | ------- | ------------------------------------ | ----------------------------------------------------------------- |
+| `quality-<variant>`   | 0–1     | `generateQuote`, via an LLM judge    | Right after generation, off the user's critical path              |
+| `sentiment-<variant>` | ±1      | `sentimentScorer` (one run per vote) | On every `quote/vote.cast` event                                  |
+| `reacted-<variant>`   | boolean | `reactionScorer` (deferred)          | After a wait window — `true` if any vote landed, `false` = apathy |
+
+How scores tie back to the experiment:
+
+- **`quality`** is a LLM-judged perceived quality metric that provides a baseline of _"is this **probably** a decent quote?"_
+- **`sentiment`** writes one score per vote, no matter how long after a quote was generated. This provides us a real _"did **people** actually like this?"_ value that we can compare to the **quality** to understand how well our judge is working.
+- **`reacted`** is an "after-the-fact" check to see whether or not a quote generated any engagement within its first five minutes. If it has, then we mark score it as `reacted: true`. If there are no votes, then we know that the quote wasn't high enough quality to generate engagement.
+
+## Getting Started
 
 ```bash
-npm run build
+pnpm install
+pnpm run dev
 ```
 
-## Testing
+Copy `.env.example` to `.dev.vars` and fill in the keys for local development.
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+## Building for production
 
 ```bash
-npm run test
+pnpm run build
 ```
 
 ## Styling
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+This project uses [Tailwind CSS](https://tailwindcss.com/).
 
-### Removing Tailwind CSS
+## Linting & formatting
 
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `npm install @tailwindcss/vite tailwindcss -D`
-
-## Linting & Formatting
-
-This project uses [Biome](https://biomejs.dev/) for linting and formatting. The following scripts are available:
-
+This project uses [Biome](https://biomejs.dev/):
 
 ```bash
-npm run lint
-npm run format
-npm run check
+pnpm run lint
+pnpm run format
+pnpm run check
 ```
-
 
 ## Deploy to Cloudflare Workers
 
-This project uses the Cloudflare Vite plugin (configured in `vite.config.ts`) and `wrangler.jsonc`:
+This app targets Cloudflare Workers (not Pages) via `@cloudflare/vite-plugin` in `vite.config.ts` and `wrangler.jsonc`.
 
-1. Install Wrangler: `npm install -g wrangler`
-2. Authenticate: `wrangler login`
-3. Deploy: `npx wrangler deploy`
+### 1) Log in to Cloudflare
 
-For production env vars, run `wrangler secret put MY_VAR` for each secret listed in `.env.example`. Public (non-secret) vars go in `wrangler.jsonc` under `vars`.
-
-KV, D1, R2, and Durable Object bindings are configured in `wrangler.jsonc` — see https://developers.cloudflare.com/workers/wrangler/configuration/.
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
+```bash
+npx wrangler login
 ```
 
-Then anywhere in your JSX you can use it like so:
+### 2) Create the KV namespace used by the app
 
-```tsx
-<Link to="/about">About</Link>
+```bash
+npx wrangler kv namespace create QUOTES
 ```
 
-This will create a link that will navigate to the `/about` route.
+Copy the ID from the command output and update `wrangler.jsonc`:
 
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
+```jsonc
+"kv_namespaces": [
+  {
+    "binding": "QUOTES",
+    "id": "<PRODUCTION_NAMESPACE_ID>"
+  }
+]
 ```
 
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
+### 3) Set worker secrets
 
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
+```bash
+npx wrangler secret put ANTHROPIC_API_KEY
+npx wrangler secret put OPENAI_API_KEY
+npx wrangler secret put INNGEST_EVENT_KEY
+npx wrangler secret put INNGEST_SIGNING_KEY
 ```
 
-## API Routes
+Do not set `INNGEST_DEV` in production.
 
-You can create API routes by using the `server` property in your route definitions:
+### 4) Deploy
 
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
+```bash
+npm run deploy
 ```
 
-## Data Fetching
+Your worker URL will be:
 
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
+```text
+https://demotivational-quotes.<your-subdomain>.workers.dev
 ```
 
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
+### 5) Sync the deployed app in Inngest Cloud
 
-# Demo files
+In Inngest Cloud (production environment), hit the sync endpoint:
 
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
+```text
+curl -X PUT https://demotivational-quotes.<your-subdomain>.workers.dev/api/inngest
+```
 
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+At this point you should be able to go to your URL and start generating quotes! As your generations and votes come through, you'll be able to see your Inngest experiment and scoring dashboards updating to reflect the data now flowing through 🤘
