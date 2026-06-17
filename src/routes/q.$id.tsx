@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestUrl } from "@tanstack/react-start/server";
 import { ArrowLeft, Check, ChevronDown, ChevronUp, Link2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { ModelBadge, TallyButton } from "#/components/quote";
@@ -9,13 +10,17 @@ import type { QuoteWithId } from "#/inngest";
 import type { VoteCast } from "#/inngest/channels";
 import { VARIANT_META } from "#/inngest/variants";
 
+type QuotePageData = QuoteWithId & { ogImage: string };
+
 const getQuote = createServerFn({ method: "GET" })
 	.validator((id: string) => id)
-	.handler(async ({ data: id }): Promise<QuoteWithId> => {
+	.handler(async ({ data: id }): Promise<QuotePageData> => {
 		const { findQuote } = await import("#/inngest");
 		const quote = await findQuote(id);
 		if (!quote) throw notFound();
-		return { ...quote, id };
+		// Social scrapers require an absolute og:image URL.
+		const ogImage = `${getRequestUrl().origin}/api/og/${id}`;
+		return { ...quote, id, ogImage };
 	});
 
 export const Route = createFileRoute("/q/$id")({
@@ -34,9 +39,14 @@ export const Route = createFileRoute("/q/$id")({
 				{ property: "og:type", content: "article" },
 				{ property: "og:title", content: title },
 				{ property: "og:description", content: description },
+				{ property: "og:image", content: q.ogImage },
+				{ property: "og:image:width", content: "1200" },
+				{ property: "og:image:height", content: "630" },
+				{ property: "og:image:alt", content: title },
 				{ name: "twitter:card", content: "summary_large_image" },
 				{ name: "twitter:title", content: title },
 				{ name: "twitter:description", content: description },
+				{ name: "twitter:image", content: q.ogImage },
 			],
 		};
 	},

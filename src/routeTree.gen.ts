@@ -16,6 +16,7 @@ import { Route as ApiVoteRouteImport } from './routes/api/vote'
 import { Route as ApiQuotesRouteImport } from './routes/api/quotes'
 import { Route as ApiQuoteRouteImport } from './routes/api/quote'
 import { Route as ApiInngestRouteImport } from './routes/api/inngest'
+import { Route as ApiOgIdRouteImport } from './routes/api/og.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +53,11 @@ const ApiInngestRoute = ApiInngestRouteImport.update({
   path: '/api/inngest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOgIdRoute = ApiOgIdRouteImport.update({
+  id: '/api/og/$id',
+  path: '/api/og/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/api/vote': typeof ApiVoteRoute
   '/api/votes-token': typeof ApiVotesTokenRoute
   '/q/$id': typeof QIdRoute
+  '/api/og/$id': typeof ApiOgIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/api/vote': typeof ApiVoteRoute
   '/api/votes-token': typeof ApiVotesTokenRoute
   '/q/$id': typeof QIdRoute
+  '/api/og/$id': typeof ApiOgIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/api/vote': typeof ApiVoteRoute
   '/api/votes-token': typeof ApiVotesTokenRoute
   '/q/$id': typeof QIdRoute
+  '/api/og/$id': typeof ApiOgIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/api/vote'
     | '/api/votes-token'
     | '/q/$id'
+    | '/api/og/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/api/vote'
     | '/api/votes-token'
     | '/q/$id'
+    | '/api/og/$id'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/api/vote'
     | '/api/votes-token'
     | '/q/$id'
+    | '/api/og/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +131,7 @@ export interface RootRouteChildren {
   ApiVoteRoute: typeof ApiVoteRoute
   ApiVotesTokenRoute: typeof ApiVotesTokenRoute
   QIdRoute: typeof QIdRoute
+  ApiOgIdRoute: typeof ApiOgIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiInngestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/og/$id': {
+      id: '/api/og/$id'
+      path: '/api/og/$id'
+      fullPath: '/api/og/$id'
+      preLoaderRoute: typeof ApiOgIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +203,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiVoteRoute: ApiVoteRoute,
   ApiVotesTokenRoute: ApiVotesTokenRoute,
   QIdRoute: QIdRoute,
+  ApiOgIdRoute: ApiOgIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

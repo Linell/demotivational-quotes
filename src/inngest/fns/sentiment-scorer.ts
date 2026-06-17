@@ -20,7 +20,6 @@ export const sentimentScorer = inngest.createFunction(
 
 		if (!quote) return { quoteId, skipped: "quote-not-found" };
 
-		// TODO: if this stops working it's because I removed the runId from this score
 		await step.run("score-sentiment", () =>
 			inngest.score({
 				name: scoreName("sentiment", quote.variant),

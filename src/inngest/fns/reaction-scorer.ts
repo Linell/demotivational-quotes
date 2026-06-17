@@ -45,6 +45,10 @@ export const reactionScorer = createScorer(
 					);
 		}
 
+		// TODO: this lands run-level on the scorer's OWN run, so it
+		// never shows per-variant in the experiment detail view.Co-locating needs
+		// the parent generate-quote run's variant stepId, but that run finalized
+		// long ago — how do we tie a delayed/deferred score to an experiment variant?
 		return {
 			name: scoreName("reacted", variant),
 			value: reacted,
