@@ -4,7 +4,7 @@ import { inngest } from "../client";
 import { EVENTS } from "../events";
 import { scoreName, VOTE_WINDOW } from "../scoring";
 import { getQuote } from "../storage";
-import { VARIANTS } from "../variants";
+import { VARIANTS, variantStepId } from "../variants";
 
 const hasReacted = (quote: Awaited<ReturnType<typeof getQuote>>) =>
 	!!quote && quote.up + quote.down > 0;
@@ -18,7 +18,7 @@ export const reactionScorer = createScorer(
 			variant: z.enum(VARIANTS),
 		}),
 	},
-	async ({ event, step }) => {
+	async ({ event, step, parents }) => {
 		const { quoteId, variant } = event.data;
 
 		// A deferred run doesn't enqueue until the parent generation finalizes, so
@@ -45,11 +45,8 @@ export const reactionScorer = createScorer(
 					);
 		}
 
-		// TODO: this lands run-level on the scorer's OWN run, so it
-		// never shows per-variant in the experiment detail view.Co-locating needs
-		// the parent generate-quote run's variant stepId, but that run finalized
-		// long ago — how do we tie a delayed/deferred score to an experiment variant?
 		return {
+			runId: parents[0].runId,
 			name: scoreName("reacted", variant),
 			value: reacted,
 		};

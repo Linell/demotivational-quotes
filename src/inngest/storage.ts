@@ -8,9 +8,10 @@ export interface StoredQuote {
 	createdAt: string;
 	up: number;
 	down: number;
+	runId: string;
 }
 
-export type QuoteWithId = StoredQuote & { id: string };
+export type QuoteWithId = Omit<StoredQuote, "runId"> & { id: string };
 
 const KEY_PREFIX = "quote:";
 const TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days — long enough to be an archive.
@@ -104,7 +105,8 @@ export async function listQuotes(): Promise<QuoteWithId[]> {
 		keys.map(async ({ name }) => {
 			const quote = await quotes().get<StoredQuote>(name, "json");
 			if (!quote) return null;
-			return { ...quote, id: name.slice(KEY_PREFIX.length) };
+			const { runId: _runId, ...rest } = quote;
+			return { ...rest, id: name.slice(KEY_PREFIX.length) };
 		}),
 	);
 	return loaded

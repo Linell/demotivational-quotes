@@ -29,7 +29,6 @@ export const generateQuote = inngest.createFunction(
 			await step.run(`score-quality-${variant}`, () =>
 				inngest.score({
 					runId,
-					stepId: variantStepId(variant),
 					name: scoreName("quality", variant),
 					value: quality,
 				}),
@@ -63,6 +62,7 @@ export const generateQuote = inngest.createFunction(
 				createdAt: new Date().toISOString(),
 				up: 0,
 				down: 0,
+				runId,
 			};
 			await putQuote(quoteId, quote);
 			return quote;
