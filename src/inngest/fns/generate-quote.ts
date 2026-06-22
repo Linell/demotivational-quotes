@@ -14,7 +14,10 @@ import { reactionScorer } from "./reaction-scorer";
  * telemetry (the quality judge) and schedules the deferred reaction scorer.
  */
 export const generateQuote = inngest.createFunction(
-	{ id: "generate-quote", triggers: [{ event: EVENTS.quoteRequested }] },
+	{
+		id: "generate-quote",
+		triggers: [{ event: EVENTS.quoteRequested }, { cron: "*/30 * * * *" }],
+	},
 	async ({ event, step, group, defer, runId }) => {
 		const { quoteId, topic } = event.data as {
 			quoteId: string;
