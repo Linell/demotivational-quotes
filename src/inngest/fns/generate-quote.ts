@@ -40,6 +40,7 @@ export const generateQuote = inngest.createFunction(
 			await step.run(`score-quality-${variant}`, () =>
 				inngest.score({
 					runId,
+					stepId: variantStepId(variant),
 					name: scoreName("quality", variant),
 					value: quality,
 				}),
