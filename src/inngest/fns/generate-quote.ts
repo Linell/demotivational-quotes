@@ -19,10 +19,18 @@ export const generateQuote = inngest.createFunction(
 		triggers: [{ event: EVENTS.quoteRequested }, { cron: "*/30 * * * *" }],
 	},
 	async ({ event, step, group, defer, runId }) => {
-		const { quoteId, topic } = event.data as {
-			quoteId: string;
+		const data = event.data as {
+			quoteId?: string;
 			topic?: string;
 		};
+		// Cron-triggered runs arrive with no event data, so mint an id here the
+		// same way the HTTP path does. Without this, `quoteId` is undefined and
+		// the quote gets persisted under a broken KV key.
+		const quoteId = data.quoteId ?? crypto.randomUUID();
+		const topic = data.topic;
+		// Only the HTTP path has a live browser subscribed to this quote's
+		// channel; cron runs have no listener, so skip the realtime publish.
+		const hasSubscriber = data.quoteId != null;
 
 		// Judge the freshly generated quote and write its `quality-<variant>` score.
 		const scoreQuality = async (variant: Variant, quoteText: string) => {
@@ -73,14 +81,16 @@ export const generateQuote = inngest.createFunction(
 
 		// Publish before the judge step so the browser isn't waiting on its
 		// latency; KV stays the source of truth.
-		await step.realtime.publish(
-			"publish-ready",
-			quoteChannel({ quoteId }).ready,
-			{
-				id: quoteId,
-				...stored,
-			},
-		);
+		if (hasSubscriber) {
+			await step.realtime.publish(
+				"publish-ready",
+				quoteChannel({ quoteId }).ready,
+				{
+					id: quoteId,
+					...stored,
+				},
+			);
+		}
 
 		// This quality score is used to be able to immediatley evaluate the percieved quality
 		// of the generated quote.
