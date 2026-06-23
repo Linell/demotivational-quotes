@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
+import type { Font } from "satori";
 import { ImageResponse, loadGoogleFont } from "workers-og";
 import { findQuote } from "#/inngest";
 import { VARIANT_META, type Variant } from "#/inngest/variants";
@@ -91,13 +92,17 @@ export const Route = createFileRoute("/api/og/$id")({
 					loadGoogleFont({ family: "Inter", weight: 700 }),
 				]);
 
+				// workers-og derives ImageResponseOptions from @vercel/og, which
+				// isn't installed here, so its Satori `fonts` field is erased from
+				// the type. Spread a typed satori Font[] in alongside the rest.
+				const fonts: Font[] = [
+					{ name: "Inter", data: regular, weight: 400, style: "normal" },
+					{ name: "Inter", data: bold, weight: 700, style: "normal" },
+				];
 				const image = new ImageResponse(markup(quote), {
 					width: WIDTH,
 					height: HEIGHT,
-					fonts: [
-						{ name: "Inter", data: regular, weight: 400, style: "normal" },
-						{ name: "Inter", data: bold, weight: 700, style: "normal" },
-					],
+					...{ fonts },
 				});
 
 				// Replace ImageResponse's year-long immutable cache so the card

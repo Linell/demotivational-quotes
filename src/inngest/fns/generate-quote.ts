@@ -1,4 +1,5 @@
 import { experiment } from "inngest";
+import type { ExperimentRef } from "inngest/experimental";
 import { quoteChannel } from "../channels";
 import { inngest } from "../client";
 import { EVENTS } from "../events";
@@ -33,33 +34,40 @@ export const generateQuote = inngest.createFunction(
 		const hasSubscriber = data.quoteId != null;
 
 		// Judge the freshly generated quote and write its `quality-<variant>` score.
-		const scoreQuality = async (variant: Variant, quoteText: string) => {
+		// The score is attached to the experiment variant via the `experimentRef`
+		// handle so the cloud co-locates it with the variant on the experiment
+		// detail, rather than relying on the variant's step id.
+		const scoreQuality = async (
+			variant: Variant,
+			quoteText: string,
+			experimentRef: ExperimentRef,
+		) => {
 			const quality = await step.run(`judge-${variant}`, () =>
 				judgeQuote(quoteText),
 			);
 			await step.run(`score-quality-${variant}`, () =>
-				inngest.score({
+				inngest.score.experiment({
 					runId,
-					stepId: variantStepId(variant),
 					name: scoreName("quality", variant),
 					value: quality,
+					experiment: experimentRef,
 				}),
 			);
 		};
 
-		const { result: quoteText, variant } = await group.experiment(
-			"quote-model",
-			{
-				variants: {
-					claude: async () =>
-						step.run(variantStepId("claude"), () => generateWithClaude(topic)),
-					openai: async () =>
-						step.run(variantStepId("openai"), () => generateWithOpenAI(topic)),
-				},
-				select: experiment.weighted({ claude: 50, openai: 50 }),
-				withVariant: true,
+		const {
+			result: quoteText,
+			variant,
+			experimentRef,
+		} = await group.experiment("quote-model", {
+			variants: {
+				claude: async () =>
+					step.run(variantStepId("claude"), () => generateWithClaude(topic)),
+				openai: async () =>
+					step.run(variantStepId("openai"), () => generateWithOpenAI(topic)),
 			},
-		);
+			select: experiment.weighted({ claude: 50, openai: 50 }),
+		});
 
 		const v = variant as Variant;
 		const model = VARIANT_META[v].model;
@@ -93,19 +101,17 @@ export const generateQuote = inngest.createFunction(
 			);
 		}
 
-		// This quality score is used to be able to immediatley evaluate the percieved quality
-		// of the generated quote.
-		await scoreQuality(v, quoteText);
+		await scoreQuality(v, quoteText, experimentRef);
 
-		// This is where things get more fun, though! Whether or not another LLM thinks the joke
-		// is funny doens't matter nearly as much as the actual engagement that we're getting on
-		// the generated content. The function running below is super simple: it's just waiting
-		// for a time period (like five minutes) after generation to see if a user has actually
-		// voted on that quote. If not, we can safely assume that it wasn't funny enough.
+		// The deferred reaction scorer waits a window after generation to see
+		// whether a user actually voted — real engagement matters more than the
+		// judge's opinion. Pass the experiment handle so its `reacted` score
+		// links back to this run's experiment variant directly.
 		await step.run("schedule-reaction-scorer", () => {
 			defer("score-reaction", {
 				function: reactionScorer,
-				data: { quoteId, variant: variant as Variant },
+				data: { quoteId, variant: v },
+				experiment: experimentRef,
 			});
 		});
 

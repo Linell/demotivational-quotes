@@ -3,9 +3,7 @@
 
 import type { Variant } from "./variants";
 
-/**
- * Build a score name that encodes the model into the name.
- */
+/** Score series name encoding both the metric and the variant. */
 export function scoreName(metric: string, variant: Variant): string {
 	return `${metric}-${variant}`;
 }

@@ -2,7 +2,6 @@ import { inngest } from "../client";
 import { EVENTS } from "../events";
 import { scoreName } from "../scoring";
 import { getQuote } from "../storage";
-import { variantStepId } from "../variants";
 
 /**
  * Records a single vote's direction as a sentiment signal. Triggered by every

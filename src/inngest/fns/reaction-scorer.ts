@@ -4,7 +4,7 @@ import { inngest } from "../client";
 import { EVENTS } from "../events";
 import { scoreName, VOTE_WINDOW } from "../scoring";
 import { getQuote } from "../storage";
-import { VARIANTS, variantStepId } from "../variants";
+import { VARIANTS } from "../variants";
 
 const hasReacted = (quote: Awaited<ReturnType<typeof getQuote>>) =>
 	!!quote && quote.up + quote.down > 0;
